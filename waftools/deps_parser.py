@@ -10,7 +10,7 @@ class AstOp(object):
     def __repr__(self):
         if len(self.sub) == 1:
             return self.op + str(self.sub[0])
-        return "(" + (" " + self.op + " ").join([str(x) for x in self.sub]) + ")"
+        return f'({f" {self.op} ".join([str(x) for x in self.sub])})'
 
 class AstSym(object):
     def __init__(self, name):
@@ -40,7 +40,7 @@ def read_tok(expr):
         expr = expr[1:]
     if len(sym):
         return sym, expr
-    raise ParseError("unknown token in '%s'" % expr)
+    raise ParseError(f"unknown token in '{expr}'")
 
 def parse_expr(expr):
     opstack = []
@@ -49,16 +49,17 @@ def parse_expr(expr):
         if sym in Arity:
             sub = []
             for i in range(Arity[sym]):
-                if len(outstack) == 0:
+                if not outstack:
                     raise ParseError("missing operator argument")
                 sub.insert(0, outstack.pop())
             outstack.append(AstOp(sym, sub))
         elif sym == "(":
             raise ParseError("missing closing ')'")
         elif not isinstance(sym, AstSym):
-            raise ParseError("bogus symbol '%s'" % sym)
+            raise ParseError(f"bogus symbol '{sym}'")
         else:
             outstack.append(sym)
+
     while True:
         tok, expr = read_tok(expr)
         if tok is None:
@@ -83,7 +84,7 @@ def parse_expr(expr):
     while len(opstack):
         out(opstack.pop())
     if len(outstack) != 1:
-        raise ParseError("empty expression or extra symbols (%s)" % outstack)
+        raise ParseError(f"empty expression or extra symbols ({outstack})")
     return outstack.pop()
 
 def convert_dnf(ast):
@@ -124,6 +125,7 @@ def convert_dnf(ast):
     def redist(ast):
         def recombine(a, stuff):
             return AstOp("||", [AstOp("&&", [a, n]) for n in stuff])
+
         if isinstance(ast, AstOp):
             ast.sub = [flatten(redist(x)) for x in ast.sub]
             if ast.op == "&&":
@@ -134,10 +136,7 @@ def convert_dnf(ast):
                         other = None
                         for n in ast.sub:
                             if n is not sub:
-                                if other is None:
-                                    other = n
-                                else:
-                                    other = flatten(AstOp("&&", [other, n]))
+                                other = n if other is None else flatten(AstOp("&&", [other, n]))
                         return flatten(redist(recombine(other, sub.sub)))
         return ast
 
@@ -158,6 +157,7 @@ def check_dependency_expr(expr, deps):
             elif ast.op == "!":
                 return not vals[0]
         assert False
+
     if eval_ast(ast):
         return True, None
 
@@ -174,10 +174,7 @@ def check_dependency_expr(expr, deps):
     #   2. the first conflicting dep at all
 
     def get_sub_list(node, op):
-        if isinstance(node, AstOp) and node.op == op:
-            return node.sub
-        else:
-            return [node]
+        return node.sub if isinstance(node, AstOp) and node.op == op else [node]
 
     conflict_dep = None
     missing_dep = None
@@ -205,7 +202,7 @@ def check_dependency_expr(expr, deps):
 
     reason = "unknown"
     if missing_dep is not None:
-        reason = "%s not found" % (missing_dep)
+        reason = f"{missing_dep} not found"
     elif conflict_dep is not None:
-        reason = "%s found" % (conflict_dep)
+        reason = f"{conflict_dep} found"
     return False, reason
