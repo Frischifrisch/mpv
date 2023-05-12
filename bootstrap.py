@@ -6,8 +6,10 @@ import os, sys, stat, hashlib, subprocess
 from urllib.request import urlopen, URLError
 
 WAFRELEASE = "waf-2.0.24"
-WAFURLS    = ["https://waf.io/" + WAFRELEASE,
-              "https://www.freehackers.org/~tnagy/release/" + WAFRELEASE]
+WAFURLS = [
+    f"https://waf.io/{WAFRELEASE}",
+    f"https://www.freehackers.org/~tnagy/release/{WAFRELEASE}",
+]
 SHA256HASH = "93909bca823a675f9f40af7c65b24887c3a3c0efdf411ff1978ba827194bdeb0"
 
 if os.path.exists("waf"):
@@ -17,21 +19,21 @@ if os.path.exists("waf"):
         sys.exit(0)
 
 if "--no-download" in sys.argv[1:]:
-    print("Did not find {} and no download was requested.".format(WAFRELEASE))
+    print(f"Did not find {WAFRELEASE} and no download was requested.")
     sys.exit(1)
 
 waf = None
 
 for WAFURL in WAFURLS:
     try:
-        print("Downloading {}...".format(WAFURL))
+        print(f"Downloading {WAFURL}...")
         waf = urlopen(WAFURL).read()
         break
     except URLError as err:
-        print("Download failed! ({})".format(err))
+        print(f"Download failed! ({err})")
 
 if not waf:
-    print("Could not download {}.".format(WAFRELEASE))
+    print(f"Could not download {WAFRELEASE}.")
 
     sys.exit(1)
 
@@ -49,8 +51,8 @@ if SHA256HASH == hashlib.sha256(waf).hexdigest():
     print("Checksum verified.")
 else:
     print("The checksum of the downloaded file does not match!")
-    print(" - got:      {}".format(hashlib.sha256(waf).hexdigest()))
-    print(" - expected: {}".format(SHA256HASH))
+    print(f" - got:      {hashlib.sha256(waf).hexdigest()}")
+    print(f" - expected: {SHA256HASH}")
     print("Please download and verify the file manually.")
 
     sys.exit(1)

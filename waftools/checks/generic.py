@@ -114,7 +114,7 @@ def _check_pkg_config(_dyn_libs, _pkgc_args, *args, **kw_ext):
         dyn_libs  = {}
         for i in range(0, len(packages)):
             if i < len(verchecks):
-                sargs.append(packages[i] + ' ' + verchecks[i])
+                sargs.append(f'{packages[i]} {verchecks[i]}')
             else:
                 sargs.append(packages[i])
             if _dyn_libs and _dyn_libs[i]:
@@ -141,13 +141,14 @@ def _check_pkg_config(_dyn_libs, _pkgc_args, *args, **kw_ext):
         defkey = inflector.define_key(dependency_identifier)
         if result:
             ctx.define(defkey, 1)
-            for x in dyn_libs.keys():
-                ctx.env['LIB_'+x] += dyn_libs[x]
+            for x in dyn_libs:
+                ctx.env[f'LIB_{x}'] += dyn_libs[x]
         else:
             ctx.add_optional_message(dependency_identifier,
                                      "'{0}' not found".format(" ".join(sargs)))
             ctx.undefine(defkey)
         return result
+
     return fn
 
 def check_headers(*headers, **kw_ext):
@@ -194,7 +195,8 @@ def check_stub(ctx, dependency_identifier):
 
 def compose_checks(*checks):
     def fn(ctx, dependency_identifier):
-        return all([check(ctx, dependency_identifier) for check in checks])
+        return all(check(ctx, dependency_identifier) for check in checks)
+
     return fn
 
 def any_check(*checks):
@@ -205,9 +207,8 @@ def any_check(*checks):
 def load_fragment(fragment):
     file_path = os.path.join(os.path.dirname(__file__), '..', 'fragments',
                              fragment)
-    fp = open(file_path,"r")
-    fragment_code = fp.read()
-    fp.close()
+    with open(file_path,"r") as fp:
+        fragment_code = fp.read()
     return fragment_code
 
 def check_macos_sdk(version):
